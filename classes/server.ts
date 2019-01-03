@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { SERVER_PORT } from '../global/environment';
 import socketIO from 'socket.io';
@@ -6,60 +5,50 @@ import http from 'http';
 
 import * as socket from '../sockets/socket';
 
-
-
 export default class Server {
+  private static _intance: Server;
 
-    private static _intance: Server;
+  public app: express.Application;
+  public port: number;
 
-    public app: express.Application;
-    public port: number;
+  public io: socketIO.Server;
+  private httpServer: http.Server;
 
-    public io: socketIO.Server;
-    private httpServer: http.Server;
+  private constructor() {
+    this.app = express();
+    this.port = SERVER_PORT;
 
+    this.httpServer = new http.Server(this.app);
+    this.io = socketIO(this.httpServer);
 
-    private constructor() {
+    this.escucharSockets();
+  }
 
-        this.app = express();
-        this.port = SERVER_PORT;
+  public static get instance() {
+    return this._intance || (this._intance = new this());
+  }
 
-        this.httpServer = new http.Server( this.app );
-        this.io = socketIO( this.httpServer );
+  private escucharSockets() {
+    console.log('Escuchando conexiones - sockets');
 
-        this.escucharSockets();
-    }
+    this.io.on('connection', (cliente: any) => {
+      //Conectar Cliente
+      socket.conectarCliente(cliente, this.io);
+      // Configurar usuario
+      socket.configurar_usuario(cliente, this.io);
 
-    public static get instance() {
-        return this._intance || ( this._intance = new this() );
-    }
+      // obtener usuarios
+      socket.obtenerUsuarios(cliente, this.io);
 
+      // Mensajes
+      socket.mensaje(cliente, this.io);
 
-    private escucharSockets() {
+      // Desconectar
+      socket.desconectar(cliente, this.io);
+    });
+  }
 
-        console.log('Escuchando conexiones - sockets');
-
-        this.io.on('connection', (cliente: any) => {
-            //Conectar Cliente
-            socket.conectarCliente(cliente);
-            // Configurar usuario
-            socket.confgurar_usuario(cliente, this.io);
-
-            // Mensajes
-            socket.mensaje( cliente, this.io );
-
-            // Desconectar
-            socket.desconectar( cliente );         
-
-        });
-
-    }
-
-
-    start( callback: Function ) {
-
-        this.httpServer.listen( this.port, callback );
-
-    }
-
+  start(callback: Function) {
+    this.httpServer.listen(this.port, callback);
+  }
 }
