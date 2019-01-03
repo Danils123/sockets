@@ -13,7 +13,12 @@ export const conectarCliente = (cliente: Socket, io: socketIO.Server) => {
 export const desconectar = (cliente: Socket, io: socketIO.Server) => {
   cliente.on('disconnect', () => {
     usuariosConectados.borrarUsuario(cliente.id);
-    io.emit('usuarios-activos', usuariosConectados.obtenerLista());
+    io.emit(
+      'usuarios-activos',
+      usuariosConectados
+        .obtenerLista()
+        .filter(usuario => usuario.id !== cliente.id)
+    );
   });
 };
 
@@ -46,7 +51,9 @@ export const obtenerUsuarios = (cliente: Socket, io: socketIO.Server) => {
   cliente.on('obtener-usuarios', () => {
     io.to(cliente.id).emit(
       'usuarios-activos',
-      usuariosConectados.obtenerLista()
+      usuariosConectados
+        .obtenerLista()
+        .filter(usuario => usuario.id !== cliente.id)
     );
   });
 };
